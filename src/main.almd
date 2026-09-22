@@ -97,7 +97,7 @@ effect fn current_file() -> String = {
 
 // ハンドラ本体。method+path を mod.route で振り分け、Result を返す。
 effect fn dispatch(req: HttpRequest) -> Result[HttpResponse, String] = {
-  let file = current_file()
+  let file = current_file()!
   let method = http.req_method(req)
   let path = api.clean_path(http.req_path(req))
   match api.route(method, path) {
@@ -115,7 +115,7 @@ effect fn main() -> Unit = {
     ok(n)  => n,
     err(_) => 8088,
   }
-  println("[memory-api] listening on http://localhost:${int.to_string(port)} (log: ${current_file()})")
+  println("[memory-api] listening on http://localhost:${int.to_string(port)} (log: ${current_file()!})")
   http.serve(port, (req) => {
     match dispatch(req) {
       ok(resp) => resp,
