@@ -96,5 +96,5 @@ local fn decode_bytes(src: List[Int], i: Int, acc: List[Int]) -> List[Int] = {
 // バイト列を再構成して UTF-8 文字列に戻す。
 fn url_decode(s: String) -> String = {
   let seed: List[Int] = []
-  string.from_bytes(decode_bytes(string.to_bytes(s), 0, seed))
+  bytes.to_string_lossy(bytes.from_list(decode_bytes(bytes.to_list(bytes.from_string(s)), 0, seed)))
 }
