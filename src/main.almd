@@ -22,7 +22,6 @@ import value
 import result
 import list
 import string
-import map
 import int
 
 local fn events_json(evs: List[memory.MemoryEvent]) -> Value =
@@ -57,10 +56,14 @@ effect fn handle_note(file: String, body: String) -> Result[HttpResponse, String
   }
 }
 
+// http.query_params の (key, value) 列から最初の key の値を引く。
+fn query_param(params: List[(String, String)], k: String) -> Option[String] =
+  params |> list.find(((key, _)) => key == k) |> option.map(((_, v)) => v)
+
 effect fn handle_recall(file: String, req: HttpRequest) -> Result[HttpResponse, String] = {
-  let params = http.query_params(req)
-  let uid = match int.parse(map.get(params, "user_id") ?? "0") { ok(n) => n, err(_) => 0 }
-  let limit = match int.parse(map.get(params, "limit") ?? "0") { ok(n) => n, err(_) => 0 }
+  let params = http.query_params(req) ?? []
+  let uid = match int.parse(query_param(params, "user_id") ?? "0") { ok(n) => n, err(_) => 0 }
+  let limit = match int.parse(query_param(params, "limit") ?? "0") { ok(n) => n, err(_) => 0 }
   let all = load_all(file)!
   ok(http.json(200, json.stringify(value.object([
     ("user_id", value.int(uid)), ("events", events_json(api.recent_of(all, uid, limit))),
@@ -68,9 +71,9 @@ effect fn handle_recall(file: String, req: HttpRequest) -> Result[HttpResponse, 
 }
 
 effect fn handle_search(file: String, req: HttpRequest) -> Result[HttpResponse, String] = {
-  let params = http.query_params(req)
-  // query_params は URL デコードしない (almide#684) ので自前で復号する。
-  let q = api.url_decode(map.get(params, "q") ?? "")
+  let params = http.query_params(req) ?? []
+  // query_params は url.parse_query で復号済み (C-404) なので二重に復号しない。
+  let q = query_param(params, "q") ?? ""
   let all = load_all(file)!
   ok(http.json(200, json.stringify(value.object([
     ("q", value.string(q)), ("events", events_json(api.search(all, q))),
